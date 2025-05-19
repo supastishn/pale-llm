@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with RAG</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .chat-container { background-color: #fff; width: 80%; max-width: 600px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; display: flex; flex-direction: column; height: 80vh; }
+        .chat-box { flex-grow: 1; padding: 20px; overflow-y: auto; border-bottom: 1px solid #ddd; }
+        .chat-message { margin-bottom: 15px; }
+        .chat-message .sender { font-weight: bold; margin-bottom: 5px; }
+        .chat-message .text { padding: 8px 12px; border-radius: 18px; display: inline-block; max-width: 80%; }
+        .user .text { background-color: #007bff; color: white; margin-left: auto; }
+        .bot .text { background-color: #e9e9eb; color: #333; }
+        .input-area { display: flex; padding: 10px; border-top: 1px solid #ddd;}
+        .input-area input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px; }
+        .input-area button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .input-area button:hover { background-color: #0056b3; }
+        .thinking { font-style: italic; color: #888; text-align: center; padding: 10px;}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-box" id="chatBox">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const messageText = userInput.value.trim();
+            if (!messageText) return;
+
+            appendMessage('You', messageText, 'user');
+            userInput.value = '';
+            appendThinkingIndicator(); // Show thinking indicator
+
+            // Create a unique ID for the bot's message div to append tokens to
+            const botMessageId = 'bot-message-' + Date.now();
+            appendMessage('Bot', '', 'bot', botMessageId); // Append an empty message for the bot, to be filled by stream
+
+            try {
+                const eventSource = new EventSource(`/chat?message=${encodeURIComponent(messageText)}`); // Send message as query param for GET
+
+                eventSource.onmessage = function(event) {
+                    removeThinkingIndicator(); // Remove thinking indicator once first token arrives
+                    const data = JSON.parse(event.data);
+
+                    if (data.error) {
+                        console.error("SSE Error:", data.error);
+                        updateBotMessage(botMessageId, `Error: ${data.error}`);
+                        eventSource.close();
+                        return;
+                    }
+
+                    if (data.token) {
+                        appendToBotMessage(botMessageId, data.token);
+                    }
+
+                    if (data.sources) {
+                        // Append sources below the bot's message or in a designated area
+                        // For simplicity, appending as a new message here.
+                        appendMessage('Bot', 'Sources: ' + data.sources.join(', '), 'bot');
+                    }
+
+                    if (data.event && data.event === 'eos') {
+                        eventSource.close();
+                    }
+                };
+
+                eventSource.onerror = function(err) {
+                    removeThinkingIndicator();
+                    console.error("EventSource failed:", err);
+                    updateBotMessage(botMessageId, 'Error: Could not connect to the server for streaming.');
+                    eventSource.close();
+                };
+
+            } catch (error) {
+                removeThinkingIndicator();
+                console.error("Error sending message:", error);
+                updateBotMessage(botMessageId, 'Error: Could not initiate connection to the server.');
+            }
+        }
+
+        function appendMessage(sender, text, type, messageId = null) {
+            const chatBox = document.getElementById('chatBox');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', type);
+            if (messageId) {
+                messageDiv.id = messageId;
+            }
+            // Ensure text is treated as text, not HTML, to prevent XSS from <think> tags if they were malicious
+            const textNode = document.createTextNode(text);
+            const textDiv = document.createElement('div');
+            textDiv.classList.add('text');
+            textDiv.appendChild(textNode);
+
+            messageDiv.innerHTML = `<div class="sender">${sender}</div>`;
+            messageDiv.appendChild(textDiv);
+            
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendToBotMessage(messageId, token) {
+            const messageDiv = document.getElementById(messageId);
+            if (messageDiv) {
+                const textElement = messageDiv.querySelector('.text');
+                // Sanitize token if it might contain HTML, though Ollama typically sends plain text.
+                // For <think> tags, we want to display them as text.
+                textElement.textContent += token; 
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        function updateBotMessage(messageId, newText) {
+            const messageDiv = document.getElementById(messageId);
+            if (messageDiv) {
+                const textElement = messageDiv.querySelector('.text');
+                textElement.textContent = newText;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        function appendThinkingIndicator() {
+            const chatBox = document.getElementById('chatBox');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.classList.add('thinking');
+            thinkingDiv.id = 'thinkingIndicator';
+            thinkingDiv.innerText = 'Bot is thinking...';
+            chatBox.appendChild(thinkingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function removeThinkingIndicator() {
+            const thinkingIndicator = document.getElementById('thinkingIndicator');
+            if (thinkingIndicator) {
+                thinkingIndicator.remove();
+            }
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
