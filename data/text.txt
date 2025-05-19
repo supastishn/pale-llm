@@ -1,8 +1,0 @@
-This is an example text file for the RAG database.
-It contains some sample information that the LLM can use to answer questions.
-
-Large Language Models (LLMs) are a type of artificial intelligence.
-They are trained on vast amounts of text data to understand and generate human-like language.
-Ollama is a tool that allows you to run LLMs locally.
-Nomic-embed-text is an embedding model, and qwen2:0.5b is a chat model.
-This RAG setup will help the chat model answer questions based on the content of this file.
