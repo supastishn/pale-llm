@@ -4,3 +4,4 @@ ollama
 pypdf
 faiss-cpu
 tiktoken
+langchain-text-splitters
