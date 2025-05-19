@@ -33,7 +33,7 @@ This project demonstrates how to set up a local Retrieval Augmented Generation (
 3.  **Ollama Models:** Pull the required models:
     ```bash
     ollama pull nomic-embed-text
-    ollama pull qwen2:0.5b
+    ollama pull qwen3:0.6b
     ```
 
 ## Setup
@@ -52,7 +52,7 @@ This project demonstrates how to set up a local Retrieval Augmented Generation (
     ```
 
 4.  **Prepare your data:**
-    *   The default setup uses `data/text.txt`. You can replace this file or modify `setup_rag.py` to point to a different `.txt` file or a PDF.
+    *   The default setup uses `data/*.txt`. You can replace these files or modify `setup_rag.py` to point to a different `.txt` file or a PDF.
     *   If using a PDF, you'll need to adjust `setup_rag.py` to use `PyPDFLoader` instead of `TextLoader`.
 
 5.  **Build the RAG database:**
@@ -101,4 +101,4 @@ To enable thinking, type:
 /think (your query)
 
 To disable thinking, type:
-/no-think (your query)
+/no_think (your query)
