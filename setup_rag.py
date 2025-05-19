@@ -1,12 +1,11 @@
-
 from langchain_community.llms import Ollama
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 
-# Load the PDF
-loader = PyPDFLoader("data/llama2.pdf")
+# Load the TXT file
+loader = TextLoader("data/text.txt")
 data = loader.load()
 
 # Split the text into chunks
