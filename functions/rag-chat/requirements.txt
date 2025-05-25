@@ -1,1 +1,8 @@
 appwrite
+langchain
+langchain-community
+langchain-openai
+langchain-google-genai
+faiss-cpu
+tiktoken
+langchain-text-splitters
