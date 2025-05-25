@@ -1,6 +1,6 @@
 import os  # Ensure os is imported
 from langchain_openai import ChatOpenAI # Replaced Ollama with ChatOpenAI
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings # Changed import
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
@@ -15,8 +15,9 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FAISS_INDEX_PATH = os.path.join(BASE_DIR, "faiss_index")
 
-# Load the vector store
-oembed = OllamaEmbeddings(base_url="http://localhost:11434", model="nomic-embed-text")
+# Load the vector store using Google Generative AI Embeddings
+# This requires GEMINI_API_KEY to be set in your environment (e.g., .env file)
+oembed = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=os.getenv("GEMINI_API_KEY"))
 vectorstore = FAISS.load_local(FAISS_INDEX_PATH, oembed, allow_dangerous_deserialization=True)
 
 # Load the LLM using ChatOpenAI for an external OpenAI-compatible API
@@ -24,9 +25,9 @@ vectorstore = FAISS.load_local(FAISS_INDEX_PATH, oembed, allow_dangerous_deseria
 # IMPORTANT: Replace "your-model-name-here" with the model name your API expects.
 # Ensure the OPENAI_API_KEY environment variable is set if your API requires authentication.
 llm = ChatOpenAI(
-    openai_api_base=os.getenv("OPENAI_API_BASE", "http://localhost:8080/v1"),
-    model_name="gemini-2.5-flash-preview-05-20",          # e.g., "gpt-3.5-turbo" or a custom model served by your endpoint
-    openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+    openai_api_base=os.getenv("OPENAI_API_BASE"), # Defaults to OpenAI's standard API base if OPENAI_API_BASE env var is not set
+    model_name="gpt-4.1",          # e.g., "gpt-4.1", "gpt-3.5-turbo", or other model served by your endpoint
+    openai_api_key=os.getenv("OPENAI_API_KEY", ""), # Must be set for OpenAI models
     streaming=True,
     callbacks=CallbackManager([StreamingStdOutCallbackHandler()]),
     temperature=0

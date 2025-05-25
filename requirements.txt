@@ -2,6 +2,7 @@ Flask
 langchain
 langchain-community
 langchain-openai
+langchain-google-genai
 ollama
 pypdf
 faiss-cpu
