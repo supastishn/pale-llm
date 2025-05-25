@@ -13,6 +13,7 @@
         .chat-message .text { padding: 8px 12px; border-radius: 18px; display: inline-block; max-width: 80%; }
         .user .text { background-color: #007bff; color: white; margin-left: auto; }
         .bot .text { background-color: #e9e9eb; color: #333; }
+        .message-sources { font-size: 0.8em; color: #666; margin-top: 5px; padding-left: 10px; font-style: italic; }
         .input-area { display: flex; padding: 10px; border-top: 1px solid #ddd;}
         .input-area input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px; }
         .input-area button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
@@ -65,10 +66,15 @@
                         appendToBotMessage(botMessageId, data.token);
                     }
 
-                    if (data.sources) {
-                        // Append sources below the bot's message or in a designated area
-                        // For simplicity, appending as a new message here.
-                        appendMessage('Bot', 'Sources: ' + data.sources.join(', '), 'bot');
+                    if (data.sources && data.sources.length > 0) {
+                        const currentBotMessageDiv = document.getElementById(botMessageId);
+                        if (currentBotMessageDiv) {
+                            const sourcesArea = currentBotMessageDiv.querySelector('.message-sources');
+                            if (sourcesArea) {
+                                sourcesArea.textContent = 'Sources: ' + data.sources.join(', ');
+                                chatBox.scrollTop = chatBox.scrollHeight; // Adjust scroll after adding sources
+                            }
+                        }
                     }
 
                     if (data.event && data.event === 'eos') {
@@ -98,13 +104,22 @@
                 messageDiv.id = messageId;
             }
             // Ensure text is treated as text, not HTML, to prevent XSS from <think> tags if they were malicious
-            const textNode = document.createTextNode(text);
+            const senderDiv = document.createElement('div');
+            senderDiv.classList.add('sender');
+            senderDiv.textContent = sender;
+            messageDiv.appendChild(senderDiv);
+
             const textDiv = document.createElement('div');
             textDiv.classList.add('text');
-            textDiv.appendChild(textNode);
-
-            messageDiv.innerHTML = `<div class="sender">${sender}</div>`;
+            textDiv.textContent = text; // Initial text, will be appended to for bot
             messageDiv.appendChild(textDiv);
+            
+            if (type === 'bot' && messageId) { // Add sources placeholder for streaming bot messages
+                const sourcesPlaceholderDiv = document.createElement('div');
+                sourcesPlaceholderDiv.classList.add('message-sources'); // For styling as footnote
+                // This div will be populated when sources arrive
+                messageDiv.appendChild(sourcesPlaceholderDiv);
+            }
             
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight;

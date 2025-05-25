@@ -3,13 +3,13 @@
 
 # Local RAG Chat with Ollama
 
-This project demonstrates how to set up a local Retrieval Augmented Generation (RAG) system using a compatible LLM (like a local one via Ollama or a cloud one via an API endpoint), LangChain, Google Gemini Embeddings, and FAISS. It allows you to chat with an LLM that can reference a custom knowledge base.
+This project demonstrates how to set up a local Retrieval Augmented Generation (RAG) system using a compatible LLM (like a local one via Ollama or a cloud one via an API endpoint), LangChain, Google Gemini Embeddings, and ChromaDB. It allows you to chat with an LLM that can reference a custom knowledge base.
 
 ## Features
 
 *   Uses a configurable LLM for chat (defaulting to an OpenAI-compatible API endpoint).
 *   Embeds documents using Google Gemini Embeddings (`models/embedding-001`).
-*   Stores embeddings in a FAISS vector database.
+*   Stores embeddings in a ChromaDB vector database.
 *   Allows chatting with the configured LLM, augmented with information from local text files.
 *   Easily adaptable to use different text files or PDFs.
 
@@ -20,7 +20,7 @@ This project demonstrates how to set up a local Retrieval Augmented Generation (
 ├── chat_with_rag.py    # Script to chat with the RAG system
 ├── data/
 │   └── texts.txt        # Sample text file for the RAG knowledge base
-├── faiss_index/        # Directory where the FAISS vector store is saved (created by setup_rag.py)
+├── chroma_db/          # Directory where the ChromaDB vector store is saved (created by setup_rag.py)
 ├── requirements.txt    # Python dependencies
 ├── setup_rag.py        # Script to process the data and create the RAG database
 └── README.md           # This file
@@ -59,10 +59,11 @@ This project demonstrates how to set up a local Retrieval Augmented Generation (
     *   If using a PDF, you'll need to adjust `setup_rag.py` to use `PyPDFLoader` instead of `TextLoader`.
 
 5.  **Build the RAG database:**
-    Run the setup script. This will process the documents in `data/*.txt`, generate embeddings using Google Gemini, and save them into the `faiss_index` directory.
+    Run the setup script. This will process the documents in `data/*.txt`, generate embeddings using Google Gemini, and save them into the `chroma_db` directory.
     ```bash
     python setup_rag.py
     ```
+    If the `chroma_db` directory already exists, the script will print a message and exit to avoid overwriting. Remove the directory if you want to rebuild the database.
     This step might take a few minutes depending on the size of your documents and your system's performance. Remember to have your `GEMINI_API_KEY` set.
 
 ## Usage
@@ -88,11 +89,11 @@ The script will prompt you for input. Type your questions and press Enter. To ex
 
 ## Files
 
-*   `setup_rag.py`: Loads all `*.txt` documents from the `data/` directory, splits them into chunks, generates embeddings using Google Gemini (`models/embedding-001`), and stores these embeddings in a FAISS vector database saved locally in the `faiss_index` directory. Requires `GEMINI_API_KEY`.
-*   `chat_with_rag.py`: Loads the pre-built FAISS vector database (using Google Gemini embeddings) and the configured chat model (defaulting to an OpenAI-compatible API endpoint). It sets up a retrieval chain that fetches relevant document chunks based on your query and provides them as context to the LLM to generate an answer. Requires `GEMINI_API_KEY` for embeddings and potentially other keys/configs for the chat LLM.
-*   `requirements.txt`: Lists all necessary Python packages for the project, including `langchain-google-genai`.
+*   `setup_rag.py`: Loads all `*.txt` documents from the `data/` directory, splits them into chunks, generates embeddings using Google Gemini (`models/embedding-001`), and stores these embeddings in a ChromaDB vector database saved locally in the `chroma_db` directory. Requires `GEMINI_API_KEY`.
+*   `chat_with_rag.py`: Loads the pre-built ChromaDB vector database (using Google Gemini embeddings) and the configured chat model (defaulting to an OpenAI-compatible API endpoint). It sets up a retrieval chain that fetches relevant document chunks based on your query and provides them as context to the LLM to generate an answer. Requires `GEMINI_API_KEY` for embeddings and potentially other keys/configs for the chat LLM.
+*   `requirements.txt`: Lists all necessary Python packages for the project, including `langchain-google-genai` and `chromadb`.
 *   `data/`: Directory containing text files used as the knowledge base for the RAG system.
-*   `faiss_index/`: This directory is created by `setup_rag.py` and contains the FAISS vector store files (`index.faiss` and `index.pkl`). **Do not edit these files manually.** If you change your data source, delete this directory and re-run `setup_rag.py`.
+*   `chroma_db/`: This directory is created by `setup_rag.py` and contains the ChromaDB vector store files (e.g., SQLite database and Parquet files). **Do not edit these files manually.** If you change your data source, delete this directory and re-run `setup_rag.py`.
 
 ## Chat Guide
 

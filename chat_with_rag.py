@@ -1,7 +1,7 @@
-import os  # Ensure os is imported
-from langchain_openai import ChatOpenAI # Replaced Ollama with ChatOpenAI
-from langchain_google_genai import GoogleGenerativeAIEmbeddings # Changed import
-from langchain_community.vectorstores import FAISS
+import os
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores import Chroma # Changed import
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.manager import CallbackManager
@@ -11,14 +11,19 @@ from dotenv import load_dotenv  # Add this import
 # Load environment variables from .env
 load_dotenv()
 
-# Determine the absolute path to the faiss_index directory
+# Determine the absolute path to the ChromaDB directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FAISS_INDEX_PATH = os.path.join(BASE_DIR, "faiss_index")
+CHROMA_DB_PATH = os.path.join(BASE_DIR, "chroma_db")
 
 # Load the vector store using Google Generative AI Embeddings
 # This requires GEMINI_API_KEY to be set in your environment (e.g., .env file)
 oembed = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=os.getenv("GEMINI_API_KEY"))
-vectorstore = FAISS.load_local(FAISS_INDEX_PATH, oembed, allow_dangerous_deserialization=True)
+
+if not os.path.exists(CHROMA_DB_PATH):
+    print(f"Error: ChromaDB directory not found at {CHROMA_DB_PATH}. Please run setup_rag.py first.")
+    exit()
+
+vectorstore = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=oembed)
 
 # Load the LLM using ChatOpenAI for an external OpenAI-compatible API
 # IMPORTANT: Replace "your-custom-base-url-here" with your actual API base URL.

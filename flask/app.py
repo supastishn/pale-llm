@@ -8,16 +8,20 @@ import queue
 # Add the parent directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from langchain_community.llms import Ollama
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_openai import ChatOpenAI # Changed import
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
+from dotenv import load_dotenv # Added import
 from langchain.callbacks.base import BaseCallbackHandler
 
-# Determine the absolute path to the faiss_index directory (relative to the project root)
+# Load environment variables from .env (for GEMINI_API_KEY)
+load_dotenv()
+
+# Determine the absolute path to the chroma_db directory (relative to the project root)
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-FAISS_INDEX_PATH = os.path.join(PROJECT_ROOT, "faiss_index")
+CHROMA_DB_PATH = os.path.join(PROJECT_ROOT, "chroma_db") # Changed path
 
 # --- Custom Callback Handler for Web Streaming ---
 class QueueCallbackHandler(BaseCallbackHandler):
@@ -40,12 +44,17 @@ class QueueCallbackHandler(BaseCallbackHandler):
 
 # --- Initialize Langchain components (globally or per request as needed) ---
 try:
-    oembed = OllamaEmbeddings(base_url="http://localhost:11434", model="nomic-embed-text")
-    vectorstore = FAISS.load_local(FAISS_INDEX_PATH, oembed, allow_dangerous_deserialization=True)
+    # Use Google Generative AI Embeddings, consistent with setup_rag.py
+    oembed = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=os.getenv("GEMINI_API_KEY"))
+    if not os.path.exists(CHROMA_DB_PATH):
+        print(f"Error: ChromaDB directory not found at {CHROMA_DB_PATH}. Please run setup_rag.py first.")
+        vectorstore = None
+    else:
+        vectorstore = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=oembed)
 except Exception as e:
-    print(f"Error loading FAISS index or Ollama Embeddings: {e}")
+    print(f"Error loading ChromaDB or Google Generative AI Embeddings: {e}")
     # Fallback or error state if these fail. For now, app might not work.
-    vectorstore = None 
+    vectorstore = None
 
 prompt_template_str = """The answer may not be in the context. If the user's prompt is unrelated to the context, you do not need to use context.
 Use the following pieces of context to answer the question at the end only if the user's prompt is related.. If the prompt is not related, don't use the context. Simply respond normally.
@@ -82,9 +91,14 @@ def chat_endpoint():
     token_q = queue.Queue()
     q_callback = QueueCallbackHandler(token_q)
 
-    llm_for_stream = Ollama(
-        base_url="http://localhost:11434", model="qwen3:0.6b", # Ensure this model is correct
-        callbacks=[q_callback], temperature=0
+    # Configure LLM to match chat_with_rag.py
+    llm_for_stream = ChatOpenAI(
+        openai_api_base=os.getenv("OPENAI_API_BASE"),
+        model_name="gpt-4.1",  # Matches chat_with_rag.py
+        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        streaming=True,
+        callbacks=[q_callback],
+        temperature=0
     )
     current_qa_chain = RetrievalQA.from_chain_type(
         llm=llm_for_stream, chain_type="stuff", retriever=vectorstore.as_retriever(),
@@ -139,4 +153,4 @@ def chat_endpoint():
     return Response(stream_with_context(generate_sse_stream()), mimetype='text/event-stream')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(debug=True, port=8005)
