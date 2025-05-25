@@ -82,8 +82,17 @@ def home():
 @app.route('/chat', methods=['GET']) # Changed from POST to GET
 def chat_endpoint():
     user_message = request.args.get('message') # Changed from request.json.get to request.args.get for GET requests
+    temperature = request.args.get('temperature', '0.7')  # Get temperature from query params, default to 0.7
+    
     if not user_message:
         return jsonify({'error': 'No message provided in query parameters'}), 400
+    
+    # Validate and convert temperature
+    try:
+        temperature = float(temperature)
+        temperature = max(0.0, min(2.0, temperature))  # Clamp between 0 and 2
+    except (ValueError, TypeError):
+        temperature = 0.7  # Default fallback
     
     if not vectorstore:
         return jsonify({'error': 'Vectorstore not initialized. Check server logs.'}), 500
@@ -91,14 +100,14 @@ def chat_endpoint():
     token_q = queue.Queue()
     q_callback = QueueCallbackHandler(token_q)
 
-    # Configure LLM to match chat_with_rag.py
+    # Configure LLM to match chat_with_rag.py with dynamic temperature
     llm_for_stream = ChatOpenAI(
         openai_api_base=os.getenv("OPENAI_API_BASE"),
         model_name="gpt-4.1",  # Matches chat_with_rag.py
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
         streaming=True,
         callbacks=[q_callback],
-        temperature=0
+        temperature=temperature
     )
     current_qa_chain = RetrievalQA.from_chain_type(
         llm=llm_for_stream, chain_type="stuff", retriever=vectorstore.as_retriever(),
