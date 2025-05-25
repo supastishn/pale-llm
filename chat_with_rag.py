@@ -1,11 +1,15 @@
 import os  # Ensure os is imported
-from langchain_community.llms import Ollama
+from langchain_openai import ChatOpenAI # Replaced Ollama with ChatOpenAI
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from dotenv import load_dotenv  # Add this import
+
+# Load environment variables from .env
+load_dotenv()
 
 # Determine the absolute path to the faiss_index directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,12 +19,17 @@ FAISS_INDEX_PATH = os.path.join(BASE_DIR, "faiss_index")
 oembed = OllamaEmbeddings(base_url="http://localhost:11434", model="nomic-embed-text")
 vectorstore = FAISS.load_local(FAISS_INDEX_PATH, oembed, allow_dangerous_deserialization=True)
 
-# Load the LLM
-llm = Ollama(
-    base_url="http://localhost:11434",
-    model="qwen3:0.6b",
+# Load the LLM using ChatOpenAI for an external OpenAI-compatible API
+# IMPORTANT: Replace "your-custom-base-url-here" with your actual API base URL.
+# IMPORTANT: Replace "your-model-name-here" with the model name your API expects.
+# Ensure the OPENAI_API_KEY environment variable is set if your API requires authentication.
+llm = ChatOpenAI(
+    openai_api_base=os.getenv("OPENAI_API_BASE", "http://localhost:8080/v1"),
+    model_name="gemini-2.5-flash-preview-05-20",          # e.g., "gpt-3.5-turbo" or a custom model served by your endpoint
+    openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+    streaming=True,
     callbacks=CallbackManager([StreamingStdOutCallbackHandler()]),
-    temperature=0  # Added temperature setting
+    temperature=0
 )
 
 # Create the RAG chain

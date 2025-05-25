@@ -1,0 +1,45 @@
+
+# 2025-05-25 06:29:54.435547
++n
+
+# 2025-05-25 06:30:32.419761
++/tokens
+
+# 2025-05-25 06:30:50.753638
++/add *
+
+# 2025-05-25 06:30:52.728120
++/tokens
+
+# 2025-05-25 06:30:59.210184
++/drop .pdf .txt
+
+# 2025-05-25 06:31:00.379226
++/tokens
+
+# 2025-05-25 06:33:04.621886
++make chat_with_rag use an external model via openai api with custoom base url rather than qwen3 and ollama
+
+# 2025-05-25 06:33:28.873793
++/clear
+
+# 2025-05-25 06:33:30.153093
++make chat_with_rag use an external model via openai api with custoom base url rather than qwen3 and ollama
+
+# 2025-05-25 06:35:08.177314
++/run pip install -r requirements.txt
+
+# 2025-05-25 06:35:08.177957
++/run pip install -r requirements.txt
+
+# 2025-05-25 06:35:16.207250
++n
+
+# 2025-05-25 06:35:16.808968
++/run python chat_with_rag.py
+
+# 2025-05-25 06:35:16.809196
++/run python chat_with_rag.py
+
+# 2025-05-25 06:43:57.002272
++n
